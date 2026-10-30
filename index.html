@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080b12">
+<title>LUA GENIUS AI</title>
+<style>
+:root{color-scheme:dark;--bg:#080b12;--panel:#101725;--line:#26344a;--text:#edf4ff;--muted:#91a2bb;--cyan:#55e6d1;--blue:#6c8cff;--red:#ff7777}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% -10%,#1a3152 0,transparent 42%),var(--bg);color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.wrap{max-width:1050px;margin:auto;padding:22px 16px 60px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:25px}.brand{display:flex;align-items:center;gap:11px;font-weight:850;letter-spacing:.08em}.logo{width:39px;height:39px;border-radius:12px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:grid;place-items:center;color:#061018;font-weight:1000;font-size:20px}.pill{font-size:12px;color:var(--cyan);border:1px solid #28665f;border-radius:99px;padding:5px 10px}
+h1{font-size:clamp(29px,6vw,48px);line-height:1.1;margin:18px 0 10px;letter-spacing:-.04em}h1 span{color:var(--cyan)}.lead{color:var(--muted);margin:0 0 25px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.panel{background:linear-gradient(160deg,#121d2d,#0d1420);border:1px solid var(--line);border-radius:18px;padding:18px;min-width:0}.panel h2{font-size:15px;margin:0 0 13px}.label{display:block;font-size:12px;color:#b6c5d9;margin:14px 0 7px}
+textarea,input{width:100%;background:#080f1a;border:1px solid #2b3a50;color:var(--text);border-radius:11px;padding:12px;font:inherit;outline:none}textarea:focus,input:focus{border-color:var(--cyan)}textarea{min-height:180px;resize:vertical}input{min-height:45px}
+button{border:0;border-radius:11px;padding:12px 16px;font-weight:800;font-size:14px;cursor:pointer}button:disabled{opacity:.5;cursor:wait}.primary{width:100%;margin-top:16px;background:linear-gradient(100deg,var(--cyan),#78a2ff);color:#061018}.secondary{background:#1b2940;color:var(--text);border:1px solid #344760}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.output{min-height:270px;white-space:pre-wrap;overflow-wrap:anywhere;background:#070d16;border:1px solid #27364c;border-radius:12px;padding:14px;font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#c8f9e9}
+.status{font-size:12px;color:var(--muted);margin-top:10px;min-height:20px}.status.error{color:var(--red)}.hint{font-size:12px;color:var(--muted);margin-top:13px}.settings{margin-top:17px}.settings summary{cursor:pointer;color:#b7c7dd;font-size:13px}.notice{margin-top:18px;padding:13px 14px;border:1px solid #4b4828;background:#211f14;border-radius:12px;color:#e8dca7;font-size:12px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.wrap{padding:17px 13px 45px}.panel{padding:15px}.output{min-height:220px}.top{align-items:flex-start}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><div class="brand"><div class="logo">L</div><div>LUA GENIUS AI</div></div><div class="pill">SCRIPT ASSISTANT</div></header>
+  <h1>Lua scriptを、<span>AIと作る。</span></h1>
+  <p class="lead">やりたいことを日本語で入力。Luaコードの生成・修正・解説をサポートします。</p>
+  <main class="grid">
+    <section class="panel">
+      <h2>01 / 指示を入力</h2>
+      <label class="label" for="task">作りたいLuaスクリプト</label>
+      <textarea id="task" placeholder="例：プレイヤーがアイテムに触れたら、画面に取得メッセージを表示するLuaスクリプトを作って。"></textarea>
+      <label class="label" for="kind">作成モード</label>
+      <select id="kind" style="width:100%;background:#080f1a;color:#edf4ff;border:1px solid #2b3a50;border-radius:11px;padding:12px;font:inherit">
+        <option value="generate">新規作成</option><option value="explain">コードを解説</option><option value="fix">エラー修正</option><option value="optimize">改善・整理</option>
+      </select>
+      <label class="label" for="existing">既存コード（任意）</label>
+      <textarea id="existing" style="min-height:105px" placeholder="修正・解説したいコードがあれば貼り付け"></textarea>
+      <button class="primary" id="run">✦ AIで生成する</button>
+      <div class="status" id="status" aria-live="polite">接続先を設定するとAI生成を利用できます。</div>
+    </section>
+    <section class="panel">
+      <h2>02 / 生成結果</h2>
+      <pre class="output" id="result">ここにLuaコードが表示されます。</pre>
+      <div class="actions"><button class="secondary" id="copy">コピー</button><button class="secondary" id="download">.lua 保存</button><button class="secondary" id="clear">クリア</button></div>
+      <p class="hint">生成コードは必ず内容を確認し、安全なテスト環境で動作確認してください。</p>
+    </section>
+  </main>
+  <details class="panel settings">
+    <summary>接続設定（初回のみ）</summary>
+    <label class="label" for="api">AIサーバーのURL</label>
+    <input id="api" type="url" placeholder="https://your-api.example.com">
+    <div class="actions"><button class="secondary" id="save">接続先を保存</button></div>
+    <p class="hint">ここにはサーバーの公開URLだけを入力します。AIサービスの秘密鍵は絶対に入力しないでください。</p>
+  </details>
+  <div class="notice">重要：このページはGitHub Pagesで公開できます。ただしGitHub PagesはHTMLを配信する静的ホスティングなので、AI処理には別途サーバーが必要です。サーバーURLを設定するまではAI生成できません。</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const saved=localStorage.getItem('luaGeniusApiBase')||'';
+$('api').value=saved;
+function base(){return $('api').value.trim().replace(/\/+$/,'')}
+$('save').addEventListener('click',()=>{localStorage.setItem('luaGeniusApiBase',base());$('status').textContent='接続先をこの端末に保存しました。';$('status').className='status'});
+$('run').addEventListener('click',async()=>{
+ const prompt=$('task').value.trim(),code=$('existing').value.trim(),api=base(),mode=$('kind').value;
+ if(!prompt&&!code){$('status').textContent='作りたい内容か既存コードを入力してください。';$('status').className='status error';return}
+ if(!api){$('status').textContent='先に接続設定からAIサーバーのURLを設定してください。';$('status').className='status error';return}
+ $('run').disabled=true;$('run').textContent='生成中…';$('status').textContent='AIサーバーに接続しています…';$('status').className='status';
+ try{
+  const res=await fetch(api+'/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,code,mode})});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok)throw new Error(data.error||'サーバーでエラーが発生しました（HTTP '+res.status+'）');
+  const output=data.code||data.result||data.output||data.text;
+  if(!output)throw new Error('サーバーからコードが返されませんでした。');
+  $('result').textContent=output;$('status').textContent='生成が完了しました。内容を確認してください。';
+ }catch(e){$('status').textContent=e.message||'接続に失敗しました。サーバーURLとサーバーの起動状態を確認してください。';$('status').className='status error'}
+ finally{$('run').disabled=false;$('run').textContent='✦ AIで生成する'}
+});
+$('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('result').textContent);$('status').textContent='コピーしました。'}catch(e){$('status').textContent='コピーできませんでした。';$('status').className='status error'}});
+$('download').addEventListener('click',()=>{const blob=new Blob([$('result').textContent],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='generated.lua';a.click();URL.revokeObjectURL(url)});
+$('clear').addEventListener('click',()=>{$('result').textContent='ここにLuaコードが表示されます。';$('status').textContent='結果をクリアしました。';$('status').className='status'});
+</script>
+</body>
+</html>
